@@ -1,9 +1,13 @@
 import { createBrowserRouter, RouterProvider } from "react-router-dom";
 
+import { UserProvider } from "./context/UserContext";
+
+import { ProtectedRoute } from "./components/ProtectedRoute";
 import { useState } from "react";
 import { Login } from "./pages/Login";
 import { Register } from "./pages/Register";
 import { Home } from "./pages/Home";
+
 import "./assets/css/reset.css";
 import "./assets/css/variables.css";
 import "./assets/css/global.css";
@@ -19,14 +23,18 @@ const router = createBrowserRouter([
   },
   {
     path: "/Home",
-    element: <Home />,
+    element: (
+      <ProtectedRoute>
+        <Home />
+      </ProtectedRoute>
+    ),
   },
 ]);
 
-function App() {
-  const [count, setCount] = useState(0);
-
-  return <RouterProvider router={router} />;
+export default function App() {
+  return (
+    <UserProvider>
+      <RouterProvider router={router} />
+    </UserProvider>
+  );
 }
-
-export default App;

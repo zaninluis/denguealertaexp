@@ -1,15 +1,18 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useContext } from "react";
 
 import { Footer } from "../components/Footer";
 import { Header } from "../components/Header";
 
 import { GoogleMap, useJsApiLoader, Marker } from "@react-google-maps/api";
+import { UserContext } from "../context/UserContext";
 
 export function Home() {
   const [map, setMap] = useState(null);
   const [center, setCenter] = useState(null);
   const [markers, setMarkers] = useState([]);
   const [newRegister, setNewRegister] = useState(false);
+
+  const { user } = useContext(UserContext);
 
   const containerStyle = {
     width: "100%",
@@ -30,12 +33,31 @@ export function Home() {
 
   const handleMapClick = (event) => {
     const newMarker = {
-      lat: event.latLng.lat(),
-      lng: event.latLng.lng(),
+      latitude: event.latLng.lat(),
+      longitude: event.latLng.lng(),
     };
 
-    setNewRegister(newRegister ? false : true);
+    fetch("https://denguealerta202401-production.up.railway.app/ws/foco", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${user}`,
+      },
+      body: JSON.stringify(newMarker),
+    })
+      .then((response) => response.json())
+      .then(() => {
+        setMarkers([
+          ...markers,
+          { lat: event.latLng.lat(), lng: event.latLng.lng() },
+        ]);
+      })
+      .catch((error) => {
+        console.log(error);
+        alert("Erro ao cadastrar foco!");
+      });
 
+    // setNewRegister(newRegister ? false : true);
     // setMarkers([...markers, newMarker]); // javascript spread
   };
 
@@ -59,6 +81,31 @@ export function Home() {
     if (location) {
       location.getCurrentPosition(locationSuccess, locationError);
     }
+  }, []);
+
+  useEffect(() => {
+    fetch("https://denguealerta202401-production.up.railway.app/ws/foco", {
+      headers: {
+        "Content-Type": "application=json",
+        Authorization: `Bearer ${user}`,
+      },
+    })
+      .then((response) => response.json())
+      .then((data) => {
+        //data tem os dados que retornaram da api
+        console.log(data);
+        const newMarkerArray = data.map(({ latitude, longitude }) => {
+          return {
+            lat: latitude,
+            lng: longitude,
+          };
+        });
+        setMarkers(newMarkerArray);
+      })
+      .catch((error) => {
+        // alert("erro ao consultar registros");
+        console.log(error);
+      });
   }, []);
 
   return (
@@ -101,7 +148,7 @@ export function Home() {
           <GoogleMap
             mapContainerStyle={containerStyle}
             center={center}
-            zoom={17}
+            zoom={18}
             onLoad={onLoad}
             onUnmount={() => setMap(null)}
             onClick={handleMapClick}
